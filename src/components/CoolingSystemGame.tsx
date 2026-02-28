@@ -1047,12 +1047,16 @@ export default function CoolingSystemGame() {
                       <button
                         key={comp.id}
                         onClick={() => {
-                          const isCorrect = comp.id === SCENARIOS[analysisStep].correctComponentId;
+                          const correctId = SCENARIOS[analysisStep].correctComponentId;
+                          const isCorrect = comp.id === correctId;
+                          const correctComp = COMPONENTS.find(c => c.id === correctId);
+                          const correctName = correctComp ? correctComp.nameIndo : "Komponen yang benar";
+
                           if (isCorrect) {
                             setScore(s => s + 2);
                             alert(`Benar! ${SCENARIOS[analysisStep].explanation}`);
                           } else {
-                            alert(`Kurang tepat. ${SCENARIOS[analysisStep].explanation}`);
+                            alert(`Kurang tepat. Jawaban yang benar adalah: ${correctName}. \n\nPenjelasan: ${SCENARIOS[analysisStep].explanation}`);
                           }
                           
                           if (analysisStep < SCENARIOS.length - 1) {
