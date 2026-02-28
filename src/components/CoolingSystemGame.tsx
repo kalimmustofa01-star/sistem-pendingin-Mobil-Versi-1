@@ -431,24 +431,32 @@ export default function CoolingSystemGame() {
         return;
       }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: comp.imagePrompt }] },
-        config: { imageConfig: { aspectRatio: "1:1" } }
-      });
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: comp.imagePrompt }] },
+          config: { imageConfig: { aspectRatio: "1:1" } }
+        });
 
-      const candidates = response.candidates || [];
-      if (candidates.length > 0) {
-        for (const part of candidates[0].content.parts) {
-          if (part.inlineData) {
-            const data = `data:image/png;base64,${part.inlineData.data}`;
-            setImages(prev => ({ ...prev, [compId]: data }));
-            setGenStatus('');
-            return;
+        const candidates = response.candidates || [];
+        if (candidates.length > 0) {
+          for (const part of candidates[0].content.parts) {
+            if (part.inlineData) {
+              const data = `data:image/png;base64,${part.inlineData.data}`;
+              setImages(prev => ({ ...prev, [compId]: data }));
+              setGenStatus('');
+              return;
+            }
           }
         }
+      } catch (aiError: any) {
+        console.warn("AI Generation failed, using fallback:", aiError);
+        // Fallback to LoremFlickr with keywords for better relevance
+        const fallbackUrl = `https://loremflickr.com/800/800/car,${comp.name.toLowerCase()},engine/all`;
+        setImages(prev => ({ ...prev, [compId]: fallbackUrl }));
+        setGenStatus('Menggunakan gambar alternatif (Kuota AI Habis)');
+        setTimeout(() => setGenStatus(''), 3000);
       }
-      setGenStatus('Gagal memanggil AI');
     } catch (error: any) {
       console.error("Failed to generate image:", error);
       if (error.message?.includes('429') || error.message?.includes('quota')) {
@@ -501,10 +509,13 @@ export default function CoolingSystemGame() {
           // Small delay between requests
           await new Promise(r => setTimeout(r, 1000));
         } catch (e: any) {
-          console.error(`Failed to generate image for ${comp.id}:`, e);
+          console.error(`Failed to generate image for ${comp.id}, using fallback:`, e);
+          const fallbackUrl = `https://loremflickr.com/800/800/car,${comp.name.toLowerCase()},engine/all`;
+          setImages(prev => ({ ...prev, [comp.id]: fallbackUrl }));
+          
           if (e.message?.includes('429') || e.message?.includes('quota')) {
-            setGenStatus('Kuota Habis. Berhenti sejenak.');
-            break; // Stop bulk generation if quota hit
+            setGenStatus('Kuota Habis. Menggunakan alternatif.');
+            // Continue with fallbacks for the rest instead of breaking
           }
         }
       }
@@ -526,17 +537,22 @@ export default function CoolingSystemGame() {
         setLoadingHero(false);
         return;
       }
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: 'A highly realistic, cinematic view of a modern car engine bay focusing on the cooling system components, radiator, hoses, and coolant reservoir, professional automotive photography, 4k resolution, depth of field' }] },
-        config: { imageConfig: { aspectRatio: "16:9" } }
-      });
-      
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          setHeroImage(`data:image/png;base64,${part.inlineData.data}`);
-          break;
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: 'A highly realistic, cinematic view of a modern car engine bay focusing on the cooling system components, radiator, hoses, and coolant reservoir, professional automotive photography, 4k resolution, depth of field' }] },
+          config: { imageConfig: { aspectRatio: "16:9" } }
+        });
+        
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+          if (part.inlineData) {
+            setHeroImage(`data:image/png;base64,${part.inlineData.data}`);
+            break;
+          }
         }
+      } catch (aiError) {
+        console.warn("Hero AI Generation failed, using fallback:", aiError);
+        setHeroImage('https://loremflickr.com/1920/1080/car,engine,bay/all');
       }
     } catch (error) {
       console.error("Failed to generate hero image:", error);
@@ -971,9 +987,17 @@ export default function CoolingSystemGame() {
                     <button
                       key={comp.id}
                       onClick={() => {
-                        if (comp.id === COMPONENTS[quizStep].id) {
+                        const correctId = COMPONENTS[quizStep].id;
+                        const isCorrect = comp.id === correctId;
+                        const correctName = COMPONENTS[quizStep].nameIndo;
+
+                        if (isCorrect) {
                           setScore(s => s + 1);
+                          alert(`Benar! ${COMPONENTS[quizStep].functionIndo}`);
+                        } else {
+                          alert(`Kurang tepat. Jawaban yang benar adalah: ${correctName}. \n\nFungsi: ${COMPONENTS[quizStep].functionIndo}`);
                         }
+
                         if (quizStep < COMPONENTS.length - 1) {
                           setQuizStep(s => s + 1);
                         } else {
@@ -1102,7 +1126,12 @@ export default function CoolingSystemGame() {
                 </div>
                 <div className="space-y-1">
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Status</span>
-                  <p className="text-4xl font-bold text-white">Lulus</p>
+                  <p className={cn(
+                    "text-4xl font-bold",
+                    score >= 7 ? "text-emerald-500" : "text-rose-500"
+                  )}>
+                    {score >= 7 ? "LULUS" : "Tidak Lulus"}
+                  </p>
                 </div>
               </div>
 
