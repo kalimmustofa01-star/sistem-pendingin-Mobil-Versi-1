@@ -63,7 +63,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Pompa Air (Water Pump)',
     function: 'Circulates the coolant throughout the engine and radiator.',
     functionIndo: 'Mensirkulasikan cairan pendingin ke seluruh mesin dan radiator.',
-    img src="/images/Radiator.jpg" alt="Radiator"'
+    imagePrompt: 'Isolated car water pump assembly, metallic cast iron housing, mechanical pulley, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'thermostat',
@@ -154,6 +154,17 @@ const ImagePlaceholder = ({ text }: { text: string }) => (
   </div>
 );
 
+const SmartImage = ({ src, alt, className, fallbackText }: { src?: string, alt: string, className?: string, fallbackText: string }) => {
+  if (src === '__TEXT_ONLY__' || !src) {
+    return (
+      <div className={cn("w-full h-full flex items-center justify-center bg-zinc-900/50 border border-zinc-800/50 text-zinc-500 font-black text-center p-4", className)}>
+        <span className="uppercase tracking-widest text-[10px] sm:text-xs leading-tight">{fallbackText}</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} referrerPolicy="no-referrer" />;
+};
+
 const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Record<string, string>, loading: boolean, isThermostatOpen: boolean }) => {
   if (loading) {
     return (
@@ -184,11 +195,12 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
           >
             <div className="absolute -top-6 left-0 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Radiator Unit</div>
             <div className="w-full h-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-900 shadow-2xl relative">
-              {images['radiator'] ? (
-                <img src={images['radiator']} alt="Radiator" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-zinc-800" />
-              )}
+              <SmartImage 
+                src={images['radiator']} 
+                alt="Radiator" 
+                className="w-full h-full object-cover" 
+                fallbackText="Radiator"
+              />
               {/* Cooling Effect Overlay */}
               {isThermostatOpen && (
                 <motion.div 
@@ -203,11 +215,12 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
           {/* COOLING FAN */}
           <div className="absolute left-[24%] top-[25%] w-[12%] h-[50%] z-10">
             <div className="w-full h-full rounded-full overflow-hidden border border-zinc-700 bg-zinc-900/50 shadow-xl relative">
-              {images['cooling-fan'] ? (
-                <img src={images['cooling-fan']} alt="Fan" className="w-full h-full object-cover opacity-40" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-zinc-800" />
-              )}
+              <SmartImage 
+                src={images['cooling-fan']} 
+                alt="Fan" 
+                className="w-full h-full object-cover opacity-40" 
+                fallbackText="Fan"
+              />
               <motion.div 
                 className="absolute inset-0 flex items-center justify-center"
                 animate={{ rotate: isThermostatOpen ? 360 : 0 }}
@@ -225,11 +238,12 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
           >
             <div className="absolute -top-6 left-0 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Engine Construction</div>
             <div className="w-full h-full rounded-[40px] overflow-hidden border border-zinc-700 bg-zinc-900 shadow-2xl relative">
-              {images['engine-block'] ? (
-                <img src={images['engine-block']} alt="Engine" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-zinc-800" />
-              )}
+              <SmartImage 
+                src={images['engine-block']} 
+                alt="Engine" 
+                className="w-full h-full object-cover opacity-80" 
+                fallbackText="Engine Block"
+              />
               {/* Heat Glow Animation */}
               <motion.div 
                 className="absolute inset-0 bg-red-500/5"
@@ -242,11 +256,12 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
           {/* THERMOSTAT */}
           <div className="absolute right-[48%] top-[22%] w-[10%] h-[15%] z-20">
             <div className={`w-full h-full rounded-xl overflow-hidden border ${isThermostatOpen ? 'border-emerald-500' : 'border-red-500/50'} bg-zinc-900 shadow-lg transition-colors duration-500`}>
-              {images['thermostat'] ? (
-                <img src={images['thermostat']} alt="Thermostat" className={`w-full h-full object-cover ${isThermostatOpen ? '' : 'grayscale opacity-50'}`} referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-zinc-800" />
-              )}
+              <SmartImage 
+                src={images['thermostat']} 
+                alt="Thermostat" 
+                className={`w-full h-full object-cover ${isThermostatOpen ? '' : 'grayscale opacity-50'}`} 
+                fallbackText="Thermostat"
+              />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className={`text-[8px] font-black uppercase px-1 rounded ${isThermostatOpen ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
                   {isThermostatOpen ? 'Open' : 'Closed'}
@@ -258,11 +273,12 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
           {/* WATER PUMP */}
           <div className="absolute right-[48%] bottom-[22%] w-[12%] h-[18%] z-20">
             <div className="w-full h-full rounded-xl overflow-hidden border border-blue-500/40 bg-zinc-900 shadow-lg">
-              {images['water-pump'] ? (
-                <img src={images['water-pump']} alt="Water Pump" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full bg-zinc-800" />
-              )}
+              <SmartImage 
+                src={images['water-pump']} 
+                alt="Water Pump" 
+                className="w-full h-full object-cover" 
+                fallbackText="Water Pump"
+              />
             </div>
           </div>
         </div>
@@ -450,12 +466,9 @@ export default function CoolingSystemGame() {
           }
         }
       } catch (aiError: any) {
-        console.warn("AI Generation failed, using fallback:", aiError);
-        // Fallback to LoremFlickr with more specific tags
-        const tags = comp.id === 'coolant' ? 'coolant,liquid' : `car,${comp.id},part`;
-        const fallbackUrl = `https://loremflickr.com/800/800/${tags}/all`;
-        setImages(prev => ({ ...prev, [compId]: fallbackUrl }));
-        setGenStatus('Menggunakan gambar alternatif (Kuota AI Habis)');
+        console.warn("AI Generation failed, using text fallback:", aiError);
+        setImages(prev => ({ ...prev, [compId]: "__TEXT_ONLY__" }));
+        setGenStatus('Kuota AI Habis. Menampilkan teks.');
         setTimeout(() => setGenStatus(''), 3000);
       }
     } catch (error: any) {
@@ -511,12 +524,10 @@ export default function CoolingSystemGame() {
           await new Promise(r => setTimeout(r, 1000));
         } catch (e: any) {
           console.error(`Failed to generate image for ${comp.id}, using fallback:`, e);
-          const tags = comp.id === 'coolant' ? 'coolant,liquid' : `car,${comp.id},part`;
-          const fallbackUrl = `https://loremflickr.com/800/800/${tags}/all`;
-          setImages(prev => ({ ...prev, [comp.id]: fallbackUrl }));
+          setImages(prev => ({ ...prev, [comp.id]: "__TEXT_ONLY__" }));
           
           if (e.message?.includes('429') || e.message?.includes('quota')) {
-            setGenStatus('Kuota Habis. Menggunakan alternatif.');
+            setGenStatus('Kuota Habis. Menampilkan teks.');
             // Continue with fallbacks for the rest instead of breaking
           }
         }
@@ -553,8 +564,8 @@ export default function CoolingSystemGame() {
           }
         }
       } catch (aiError) {
-        console.warn("Hero AI Generation failed, using fallback:", aiError);
-        setHeroImage('https://loremflickr.com/1920/1080/car,engine,bay/all');
+        console.warn("Hero AI Generation failed, using text fallback:", aiError);
+        setHeroImage('__TEXT_ONLY__');
       }
     } catch (error) {
       console.error("Failed to generate hero image:", error);
@@ -651,11 +662,11 @@ export default function CoolingSystemGame() {
               <div className="absolute inset-0 -z-10">
                 {heroImage ? (
                   <>
-                    <img 
+                    <SmartImage 
                       src={heroImage} 
                       alt="Car Cooling System Background" 
-                      className="w-full h-full object-cover opacity-40 scale-105"
-                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover opacity-40 scale-105" 
+                      fallbackText="Sistem Pendingin Mobil"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/60 to-transparent" />
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
@@ -787,11 +798,11 @@ export default function CoolingSystemGame() {
                             </div>
                           ) : images[selectedComponent.id] ? (
                             <div className="relative w-full h-full">
-                              <img 
+                              <SmartImage 
                                 src={images[selectedComponent.id]} 
                                 alt={selectedComponent.name} 
                                 className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
+                                fallbackText={selectedComponent.nameIndo}
                               />
                               <button 
                                 onClick={(e) => {
