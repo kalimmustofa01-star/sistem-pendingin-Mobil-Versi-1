@@ -381,6 +381,10 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
   );
 };
 
+// Initialize Gemini outside component to avoid re-initialization
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
 export default function CoolingSystemGame() {
   const [mode, setMode] = useState<GameMode>('intro');
   const [selectedComponent, setSelectedComponent] = useState<ComponentInfo | null>(null);
@@ -393,13 +397,15 @@ export default function CoolingSystemGame() {
   const [loadingHero, setLoadingHero] = useState(false);
   const [isThermostatOpen, setIsThermostatOpen] = useState(false);
 
-  // Initialize Gemini
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
   const generateImages = async () => {
     if (Object.keys(images).length > 0 || loadingImages) return;
     setLoadingImages(true);
     try {
+      if (!GEMINI_API_KEY) {
+        console.warn('GEMINI_API_KEY is missing. Images will not be generated.');
+        setLoadingImages(false);
+        return;
+      }
       const newImages: Record<string, string> = {};
       // Generate images in parallel for speed
       const promises = COMPONENTS.map(async (comp) => {
@@ -438,6 +444,10 @@ export default function CoolingSystemGame() {
     if (heroImage || loadingHero) return;
     setLoadingHero(true);
     try {
+      if (!GEMINI_API_KEY) {
+        setLoadingHero(false);
+        return;
+      }
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { parts: [{ text: 'A highly realistic, cinematic view of a modern car engine bay focusing on the cooling system components, radiator, hoses, and coolant reservoir, professional automotive photography, 4k resolution, depth of field' }] },
