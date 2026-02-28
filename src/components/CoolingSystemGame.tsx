@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   RotateCcw,
   Eye,
-  Activity
+  Activity,
+  Zap
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { clsx, type ClassValue } from 'clsx';
@@ -54,7 +55,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Radiator',
     function: 'Dissipates heat from the coolant to the outside air.',
     functionIndo: 'Membuang panas dari cairan pendingin ke udara luar.',
-    imagePrompt: '3D technical illustration of a car radiator, educational animation style, cutaway view showing internal fins, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of a real car radiator, aluminum fins, black plastic tanks, realistic textures, high resolution, automotive part, clean background'
   },
   {
     id: 'water-pump',
@@ -62,7 +63,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Pompa Air (Water Pump)',
     function: 'Circulates the coolant throughout the engine and radiator.',
     functionIndo: 'Mensirkulasikan cairan pendingin ke seluruh mesin dan radiator.',
-    imagePrompt: '3D technical illustration of a car water pump, educational animation style, mechanical assembly, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of a real car water pump, metallic cast iron texture, mechanical pulley, realistic automotive part, high resolution, clean background'
   },
   {
     id: 'thermostat',
@@ -70,7 +71,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Termostat',
     function: 'Regulates the flow of coolant based on engine temperature.',
     functionIndo: 'Mengatur aliran cairan pendingin berdasarkan suhu mesin.',
-    imagePrompt: '3D technical illustration of a car thermostat valve, educational animation style, brass and steel components, clean studio lighting, high detail'
+    imagePrompt: 'Close-up studio photography of a real car thermostat valve, brass and stainless steel, realistic spring mechanism, high resolution, clean background'
   },
   {
     id: 'cooling-fan',
@@ -78,7 +79,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Kipas Pendingin',
     function: 'Pulls air through the radiator to help cooling when the car is stationary.',
     functionIndo: 'Menarik udara melalui radiator untuk membantu pendinginan saat mobil berhenti.',
-    imagePrompt: '3D technical illustration of an electric car cooling fan, educational animation style, plastic blades and motor, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of a real car electric cooling fan, black plastic shroud and blades, electric motor, realistic automotive part, high resolution, clean background'
   },
   {
     id: 'reservoir',
@@ -86,7 +87,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Tangki Cadangan (Reservoir)',
     function: 'Stores excess coolant as it expands and contracts with temperature changes.',
     functionIndo: 'Menyimpan kelebihan cairan pendingin saat memuai dan menyusut karena perubahan suhu.',
-    imagePrompt: '3D technical illustration of a car coolant reservoir tank, educational animation style, translucent plastic, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of a real car coolant expansion tank, translucent plastic, yellow or blue cap, realistic automotive part, high resolution, clean background'
   },
   {
     id: 'hoses',
@@ -94,7 +95,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Selang Radiator',
     function: 'Transports coolant between the engine and the radiator.',
     functionIndo: 'Mengalirkan cairan pendingin antara mesin dan radiator.',
-    imagePrompt: '3D technical illustration of car radiator hoses, educational animation style, rubber texture with clamps, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of real car radiator rubber hoses, black rubber texture, metal clamps, realistic automotive part, high resolution, clean background'
   },
   {
     id: 'coolant',
@@ -102,7 +103,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Cairan Pendingin (Coolant)',
     function: 'The fluid that absorbs heat from the engine and carries it to the radiator.',
     functionIndo: 'Cairan yang menyerap panas dari mesin dan membawanya ke radiator.',
-    imagePrompt: '3D technical illustration of flowing automotive coolant, bright green fluorescent liquid, educational animation style, clean studio lighting'
+    imagePrompt: 'Close-up photography of bright green fluorescent automotive coolant liquid pouring into a container, realistic liquid physics, high resolution'
   },
   {
     id: 'engine-block',
@@ -110,7 +111,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Blok Mesin',
     function: 'The main structure of the engine where heat is generated.',
     functionIndo: 'Struktur utama mesin tempat panas dihasilkan.',
-    imagePrompt: '3D technical illustration of a car engine block cutaway, educational animation style, showing internal water jackets, clean studio lighting, high detail'
+    imagePrompt: 'Professional studio photography of a real car engine block, cast aluminum or iron, realistic metallic texture, cylinder bores, high resolution, clean background'
   }
 ];
 
@@ -400,24 +401,87 @@ export default function CoolingSystemGame() {
   const [quizStep, setQuizStep] = useState(0);
   const [score, setScore] = useState(0);
   const [analysisStep, setAnalysisStep] = useState(0);
-  const [images, setImages] = useState<Record<string, string>>({});
-  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [images, setImages] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('cooling_system_images');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [heroImage, setHeroImage] = useState<string | null>(() => {
+    return localStorage.getItem('cooling_system_hero');
+  });
   const [loadingImages, setLoadingImages] = useState(false);
   const [loadingHero, setLoadingHero] = useState(false);
+  const [genStatus, setGenStatus] = useState<string>('');
   const [isThermostatOpen, setIsThermostatOpen] = useState(false);
 
-  const generateImages = async () => {
-    if (Object.keys(images).length > 0 || loadingImages) return;
+  const generateSingleImage = async (compId: string) => {
+    if (images[compId] || loadingImages) return;
+    const comp = COMPONENTS.find(c => c.id === compId);
+    if (!comp) return;
+
     setLoadingImages(true);
+    setGenStatus(`Membangkitkan ${comp.nameIndo}...`);
     try {
       if (!GEMINI_API_KEY || !ai) {
-        console.warn('GEMINI_API_KEY is missing or AI not initialized. Images will not be generated.');
+        setGenStatus('API Key tidak ditemukan');
         setLoadingImages(false);
         return;
       }
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [{ text: comp.imagePrompt }] },
+        config: { imageConfig: { aspectRatio: "1:1" } }
+      });
+
+      const candidates = response.candidates || [];
+      if (candidates.length > 0) {
+        for (const part of candidates[0].content.parts) {
+          if (part.inlineData) {
+            const data = `data:image/png;base64,${part.inlineData.data}`;
+            setImages(prev => ({ ...prev, [compId]: data }));
+            setGenStatus('');
+            return;
+          }
+        }
+      }
+      setGenStatus('Gagal memanggil AI');
+    } catch (error: any) {
+      console.error("Failed to generate image:", error);
+      if (error.message?.includes('429') || error.message?.includes('quota')) {
+        setGenStatus('Kuota AI Habis. Coba lagi nanti.');
+      } else {
+        setGenStatus('Gagal menghasilkan gambar');
+      }
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const generateImages = async (force = false) => {
+    if ((Object.keys(images).length >= COMPONENTS.length && !force) || loadingImages) return;
+    setLoadingImages(true);
+    setGenStatus('Menghubungkan ke AI...');
+    try {
+      if (!GEMINI_API_KEY || !ai) {
+        setGenStatus('API Key tidak ditemukan');
+        setLoadingImages(false);
+        return;
+      }
+      
       const newImages: Record<string, string> = {};
-      // Generate images in parallel for speed
-      const promises = COMPONENTS.map(async (comp) => {
+      const componentsToGen = force ? COMPONENTS : COMPONENTS.filter(c => !images[c.id]);
+      
+      setGenStatus(`Menghasilkan ${componentsToGen.length} gambar...`);
+
+      // Generate images sequentially to respect rate limits and save quota
+      for (let i = 0; i < componentsToGen.length; i++) {
+        const comp = componentsToGen[i];
+        setGenStatus(`Memproses ${i + 1}/${componentsToGen.length}: ${comp.nameIndo}...`);
+        
         try {
           const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash-image',
@@ -425,25 +489,30 @@ export default function CoolingSystemGame() {
             config: { imageConfig: { aspectRatio: "1:1" } }
           });
           
-          for (const part of response.candidates?.[0]?.content?.parts || []) {
-            if (part.inlineData) {
-              return { id: comp.id, data: `data:image/png;base64,${part.inlineData.data}` };
+          const candidates = response.candidates || [];
+          if (candidates.length > 0) {
+            for (const part of candidates[0].content.parts) {
+              if (part.inlineData) {
+                const data = `data:image/png;base64,${part.inlineData.data}`;
+                setImages(prev => ({ ...prev, [comp.id]: data }));
+              }
             }
           }
-        } catch (e) {
+          // Small delay between requests
+          await new Promise(r => setTimeout(r, 1000));
+        } catch (e: any) {
           console.error(`Failed to generate image for ${comp.id}:`, e);
+          if (e.message?.includes('429') || e.message?.includes('quota')) {
+            setGenStatus('Kuota Habis. Berhenti sejenak.');
+            break; // Stop bulk generation if quota hit
+          }
         }
-        return null;
-      });
-
-      const results = await Promise.all(promises);
-      results.forEach(res => {
-        if (res) newImages[res.id] = res.data;
-      });
+      }
       
-      setImages(prev => ({ ...prev, ...newImages }));
+      setGenStatus('');
     } catch (error) {
       console.error("Failed to generate images:", error);
+      setGenStatus('Gagal menghasilkan gambar');
     } finally {
       setLoadingImages(false);
     }
@@ -477,13 +546,25 @@ export default function CoolingSystemGame() {
   };
 
   useEffect(() => {
-    if (mode === 'intro') {
+    if (mode === 'intro' && !heroImage) {
       generateHeroImage();
     }
-    if ((mode === 'exploration' || mode === 'visualization') && Object.keys(images).length === 0) {
-      generateImages();
-    }
+    // Bulk generation removed to save quota. 
+    // Images will be generated on-demand or via manual trigger.
   }, [mode]);
+
+  // Save images to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(images).length > 0) {
+      localStorage.setItem('cooling_system_images', JSON.stringify(images));
+    }
+  }, [images]);
+
+  useEffect(() => {
+    if (heroImage) {
+      localStorage.setItem('cooling_system_hero', heroImage);
+    }
+  }, [heroImage]);
 
   const resetGame = () => {
     setMode('intro');
@@ -498,13 +579,27 @@ export default function CoolingSystemGame() {
       {/* Header */}
       <header className="border-b border-zinc-800/50 bg-black/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={resetGame}>
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)]">
               <Thermometer size={18} className="text-black" />
             </div>
             <h1 className="font-bold tracking-tight text-lg">CoolingMaster <span className="text-emerald-500">v1.0</span></h1>
           </div>
           <div className="flex items-center gap-4">
+            {Object.keys(images).length > 0 && (
+              <button 
+                onClick={() => {
+                  if(confirm('Hapus semua gambar yang tersimpan?')) {
+                    localStorage.removeItem('cooling_system_images');
+                    localStorage.removeItem('cooling_system_hero');
+                    window.location.reload();
+                  }
+                }}
+                className="text-[8px] font-bold text-zinc-600 hover:text-red-400 uppercase tracking-widest transition-colors mr-4"
+              >
+                Reset Cache Gambar
+              </button>
+            )}
             {mode !== 'intro' && (
               <button 
                 onClick={resetGame}
@@ -571,15 +666,23 @@ export default function CoolingSystemGame() {
                   ))}
                 </div>
 
-                <button 
-                  onClick={() => setMode('exploration')}
-                  className="group relative px-10 py-5 bg-emerald-500 text-black font-black rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(16,185,129,0.4)] uppercase tracking-widest text-sm"
-                >
-                  <span className="relative z-10 flex items-center gap-3">
-                    Mulai Belajar <Play size={20} fill="currentColor" />
-                  </span>
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                </button>
+                <div className="flex flex-col items-center gap-6">
+                  <button 
+                    onClick={() => setMode('exploration')}
+                    className="group relative px-10 py-5 bg-emerald-500 text-black font-black rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(16,185,129,0.4)] uppercase tracking-widest text-sm"
+                  >
+                    <span className="relative z-10 flex items-center gap-3">
+                      Mulai Belajar <Play size={20} fill="currentColor" />
+                    </span>
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  </button>
+
+                  {!GEMINI_API_KEY && (
+                    <div className="flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md animate-pulse">
+                      <AlertTriangle size={16} /> API Key Belum Diatur di Vercel
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -597,13 +700,29 @@ export default function CoolingSystemGame() {
                 <div>
                   <span className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-2 block">Modul 01</span>
                   <h2 className="text-3xl font-bold tracking-tight">Eksplorasi Komponen</h2>
+                  {genStatus && (
+                    <p className="text-[10px] font-mono text-emerald-500/70 mt-1 animate-pulse uppercase tracking-widest">
+                      {genStatus}
+                    </p>
+                  )}
                 </div>
-                <button 
-                  onClick={() => setMode('visualization')}
-                  className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-black font-bold rounded-full text-sm hover:bg-white transition-colors"
-                >
-                  Lihat Aliran Cairan <ChevronRight size={16} />
-                </button>
+                <div className="flex gap-3">
+                  {Object.keys(images).length < COMPONENTS.length && (
+                    <button 
+                      onClick={() => generateImages()}
+                      disabled={loadingImages}
+                      className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 font-bold rounded-full text-[10px] hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                    >
+                      <Zap size={12} className="text-amber-400" /> Bangkitkan Semua (Boros Kuota)
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setMode('visualization')}
+                    className="flex items-center gap-2 px-6 py-2 bg-zinc-100 text-black font-bold rounded-full text-sm hover:bg-white transition-colors"
+                  >
+                    Lihat Aliran Cairan <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -650,7 +769,24 @@ export default function CoolingSystemGame() {
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <ImagePlaceholder text={selectedComponent.name} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-900">
+                              <ImagePlaceholder text={selectedComponent.name} />
+                              <div className="flex flex-col items-center gap-2">
+                                <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">Gambar belum dibangkitkan</p>
+                                <button 
+                                  onClick={() => generateSingleImage(selectedComponent.id)}
+                                  disabled={loadingImages}
+                                  className="px-6 py-2 bg-emerald-500 text-white rounded-full text-xs font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                  {loadingImages ? (
+                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                  ) : (
+                                    <Zap size={14} className="text-amber-300" />
+                                  )}
+                                  Bangkitkan Gambar (Hemat Kuota)
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
                         <div>
@@ -693,6 +829,11 @@ export default function CoolingSystemGame() {
                 <div>
                   <span className="text-purple-500 text-xs font-bold uppercase tracking-widest mb-2 block">Modul 02</span>
                   <h2 className="text-3xl font-bold tracking-tight">Visualisasi Aliran</h2>
+                  {genStatus && (
+                    <p className="text-[10px] font-mono text-purple-500/70 mt-1 animate-pulse uppercase tracking-widest">
+                      {genStatus}
+                    </p>
+                  )}
                 </div>
                 <button 
                   onClick={() => setMode('quiz')}
