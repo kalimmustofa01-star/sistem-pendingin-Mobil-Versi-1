@@ -55,7 +55,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Radiator',
     function: 'Dissipates heat from the coolant to the outside air.',
     functionIndo: 'Membuang panas dari cairan pendingin ke udara luar.',
-    imagePrompt: 'Professional studio photography of a real car radiator, aluminum fins, black plastic tanks, realistic textures, high resolution, automotive part, clean background'
+    imagePrompt: 'Isolated car radiator unit, aluminum cooling fins, black plastic end tanks, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'water-pump',
@@ -63,7 +63,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Pompa Air (Water Pump)',
     function: 'Circulates the coolant throughout the engine and radiator.',
     functionIndo: 'Mensirkulasikan cairan pendingin ke seluruh mesin dan radiator.',
-    imagePrompt: 'Professional studio photography of a real car water pump, metallic cast iron texture, mechanical pulley, realistic automotive part, high resolution, clean background'
+    imagePrompt: 'Isolated car water pump assembly, metallic cast iron housing, mechanical pulley, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'thermostat',
@@ -71,7 +71,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Termostat',
     function: 'Regulates the flow of coolant based on engine temperature.',
     functionIndo: 'Mengatur aliran cairan pendingin berdasarkan suhu mesin.',
-    imagePrompt: 'Close-up studio photography of a real car thermostat valve, brass and stainless steel, realistic spring mechanism, high resolution, clean background'
+    imagePrompt: 'Isolated car thermostat valve, brass and stainless steel construction, visible spring mechanism, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'cooling-fan',
@@ -79,7 +79,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Kipas Pendingin',
     function: 'Pulls air through the radiator to help cooling when the car is stationary.',
     functionIndo: 'Menarik udara melalui radiator untuk membantu pendinginan saat mobil berhenti.',
-    imagePrompt: 'Professional studio photography of a real car electric cooling fan, black plastic shroud and blades, electric motor, realistic automotive part, high resolution, clean background'
+    imagePrompt: 'Isolated car electric cooling fan with black plastic shroud and multi-blade fan, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'reservoir',
@@ -87,7 +87,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Tangki Cadangan (Reservoir)',
     function: 'Stores excess coolant as it expands and contracts with temperature changes.',
     functionIndo: 'Menyimpan kelebihan cairan pendingin saat memuai dan menyusut karena perubahan suhu.',
-    imagePrompt: 'Professional studio photography of a real car coolant expansion tank, translucent plastic, yellow or blue cap, realistic automotive part, high resolution, clean background'
+    imagePrompt: 'Isolated car coolant expansion tank, translucent white plastic reservoir, pressure cap, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'hoses',
@@ -95,7 +95,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Selang Radiator',
     function: 'Transports coolant between the engine and the radiator.',
     functionIndo: 'Mengalirkan cairan pendingin antara mesin dan radiator.',
-    imagePrompt: 'Professional studio photography of real car radiator rubber hoses, black rubber texture, metal clamps, realistic automotive part, high resolution, clean background'
+    imagePrompt: 'Isolated car radiator rubber hoses, black thick rubber, metal hose clamps, professional automotive part photography, white background, high detail, 4k'
   },
   {
     id: 'coolant',
@@ -103,7 +103,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Cairan Pendingin (Coolant)',
     function: 'The fluid that absorbs heat from the engine and carries it to the radiator.',
     functionIndo: 'Cairan yang menyerap panas dari mesin dan membawanya ke radiator.',
-    imagePrompt: 'Close-up photography of bright green fluorescent automotive coolant liquid pouring into a container, realistic liquid physics, high resolution'
+    imagePrompt: 'Bright green fluorescent automotive coolant liquid, pouring into a clear container, realistic liquid transparency, high detail'
   },
   {
     id: 'engine-block',
@@ -111,7 +111,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Silinder Blok',
     function: 'The main structure of the engine where heat is generated.',
     functionIndo: 'Struktur utama mesin tempat panas dihasilkan.',
-    imagePrompt: 'Professional studio photography of a real car engine block, cast aluminum or iron, realistic metallic texture, cylinder bores, high resolution, clean background'
+    imagePrompt: 'Isolated car engine block, cast aluminum or iron, visible cylinder bores, professional automotive part photography, white background, high detail, 4k'
   }
 ];
 
@@ -451,8 +451,9 @@ export default function CoolingSystemGame() {
         }
       } catch (aiError: any) {
         console.warn("AI Generation failed, using fallback:", aiError);
-        // Fallback to LoremFlickr with keywords for better relevance
-        const fallbackUrl = `https://loremflickr.com/800/800/car,${comp.name.toLowerCase()},engine/all`;
+        // Fallback to LoremFlickr with more specific tags
+        const tags = comp.id === 'coolant' ? 'coolant,liquid' : `car,${comp.id},part`;
+        const fallbackUrl = `https://loremflickr.com/800/800/${tags}/all`;
         setImages(prev => ({ ...prev, [compId]: fallbackUrl }));
         setGenStatus('Menggunakan gambar alternatif (Kuota AI Habis)');
         setTimeout(() => setGenStatus(''), 3000);
@@ -510,7 +511,8 @@ export default function CoolingSystemGame() {
           await new Promise(r => setTimeout(r, 1000));
         } catch (e: any) {
           console.error(`Failed to generate image for ${comp.id}, using fallback:`, e);
-          const fallbackUrl = `https://loremflickr.com/800/800/car,${comp.name.toLowerCase()},engine/all`;
+          const tags = comp.id === 'coolant' ? 'coolant,liquid' : `car,${comp.id},part`;
+          const fallbackUrl = `https://loremflickr.com/800/800/${tags}/all`;
           setImages(prev => ({ ...prev, [comp.id]: fallbackUrl }));
           
           if (e.message?.includes('429') || e.message?.includes('quota')) {
@@ -784,12 +786,31 @@ export default function CoolingSystemGame() {
                               <p className="text-xs font-mono text-zinc-500 animate-pulse uppercase tracking-widest">Generating Realistic Asset...</p>
                             </div>
                           ) : images[selectedComponent.id] ? (
-                            <img 
-                              src={images[selectedComponent.id]} 
-                              alt={selectedComponent.name} 
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
+                            <div className="relative w-full h-full">
+                              <img 
+                                src={images[selectedComponent.id]} 
+                                alt={selectedComponent.name} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const id = selectedComponent.id;
+                                  setImages(prev => {
+                                    const next = { ...prev };
+                                    delete next[id];
+                                    return next;
+                                  });
+                                  generateSingleImage(id);
+                                }}
+                                disabled={loadingImages}
+                                className="absolute bottom-4 right-4 p-3 bg-black/60 backdrop-blur-md text-white rounded-full hover:bg-black/80 transition-all border border-white/10 disabled:opacity-50 group"
+                                title="Perbarui Gambar"
+                              >
+                                <RotateCcw size={18} className={loadingImages ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"} />
+                              </button>
+                            </div>
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-900">
                               {loadingImages ? (
