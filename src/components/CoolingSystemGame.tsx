@@ -108,7 +108,7 @@ const COMPONENTS: ComponentInfo[] = [
   {
     id: 'engine-block',
     name: 'Engine Block',
-    nameIndo: 'Blok Mesin',
+    nameIndo: 'Silinder Blok',
     function: 'The main structure of the engine where heat is generated.',
     functionIndo: 'Struktur utama mesin tempat panas dihasilkan.',
     imagePrompt: 'Professional studio photography of a real car engine block, cast aluminum or iron, realistic metallic texture, cylinder bores, high resolution, clean background'
@@ -566,6 +566,12 @@ export default function CoolingSystemGame() {
     }
   }, [heroImage]);
 
+  useEffect(() => {
+    if (selectedComponent && !images[selectedComponent.id] && mode === 'exploration') {
+      generateSingleImage(selectedComponent.id);
+    }
+  }, [selectedComponent, mode]);
+
   const resetGame = () => {
     setMode('intro');
     setScore(0);
@@ -728,7 +734,7 @@ export default function CoolingSystemGame() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Component List */}
                 <div className="lg:col-span-4 space-y-3">
-                  {COMPONENTS.filter(c => c.id !== 'engine-block').map((comp) => (
+                  {COMPONENTS.map((comp) => (
                     <button
                       key={comp.id}
                       onClick={() => setSelectedComponent(comp)}
@@ -770,22 +776,28 @@ export default function CoolingSystemGame() {
                             />
                           ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-900">
-                              <ImagePlaceholder text={selectedComponent.name} />
-                              <div className="flex flex-col items-center gap-2">
-                                <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">Gambar belum dibangkitkan</p>
-                                <button 
-                                  onClick={() => generateSingleImage(selectedComponent.id)}
-                                  disabled={loadingImages}
-                                  className="px-6 py-2 bg-emerald-500 text-white rounded-full text-xs font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                  {loadingImages ? (
-                                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                  ) : (
-                                    <Zap size={14} className="text-amber-300" />
-                                  )}
-                                  Bangkitkan Gambar (Hemat Kuota)
-                                </button>
-                              </div>
+                              {loadingImages ? (
+                                <div className="flex flex-col items-center gap-4">
+                                  <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+                                  <div className="text-center">
+                                    <p className="text-xs font-mono text-emerald-500 animate-pulse uppercase tracking-widest">Membangkitkan Gambar...</p>
+                                    <p className="text-[10px] text-zinc-500 mt-1">Mohon tunggu sebentar</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <ImagePlaceholder text={selectedComponent.name} />
+                                  <div className="flex flex-col items-center gap-2">
+                                    <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest">Gagal memuat gambar</p>
+                                    <button 
+                                      onClick={() => generateSingleImage(selectedComponent.id)}
+                                      className="px-6 py-2 bg-zinc-800 text-white rounded-full text-xs font-bold hover:bg-zinc-700 transition-all flex items-center gap-2"
+                                    >
+                                      <RotateCcw size={14} /> Coba Lagi
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -955,7 +967,7 @@ export default function CoolingSystemGame() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Shuffle options logic would be better, but for simplicity we use a fixed set including the correct one */}
-                  {[...COMPONENTS].filter(c => c.id !== 'engine-block').sort(() => Math.random() - 0.5).map((comp) => (
+                  {[...COMPONENTS].sort(() => Math.random() - 0.5).map((comp) => (
                     <button
                       key={comp.id}
                       onClick={() => {
@@ -1031,7 +1043,7 @@ export default function CoolingSystemGame() {
                 <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-8 flex flex-col">
                   <h4 className="text-center font-bold mb-8 text-zinc-400 uppercase tracking-widest text-xs">Komponen apa yang kemungkinan bermasalah?</h4>
                   <div className="grid grid-cols-1 gap-3">
-                    {COMPONENTS.filter(c => c.id !== 'engine-block').map((comp) => (
+                    {COMPONENTS.map((comp) => (
                       <button
                         key={comp.id}
                         onClick={() => {
