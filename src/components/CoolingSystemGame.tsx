@@ -63,7 +63,7 @@ const COMPONENTS: ComponentInfo[] = [
     nameIndo: 'Pompa Air (Water Pump)',
     function: 'Circulates the coolant throughout the engine and radiator.',
     functionIndo: 'Mensirkulasikan cairan pendingin ke seluruh mesin dan radiator.',
-    imagePrompt: 'Isolated car water pump assembly, metallic cast iron housing, mechanical pulley, professional automotive part photography, white background, high detail, 4k'
+    img src="/images/Radiator.jpg" alt="Radiator"'
   },
   {
     id: 'thermostat',
