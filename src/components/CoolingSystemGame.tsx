@@ -382,8 +382,17 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
 };
 
 // Initialize Gemini outside component to avoid re-initialization
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// Use import.meta.env for better Vite/Vercel compatibility
+const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+let ai: any = null;
+
+try {
+  if (GEMINI_API_KEY) {
+    ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  }
+} catch (error) {
+  console.error('Failed to initialize GoogleGenAI:', error);
+}
 
 export default function CoolingSystemGame() {
   const [mode, setMode] = useState<GameMode>('intro');
@@ -401,8 +410,8 @@ export default function CoolingSystemGame() {
     if (Object.keys(images).length > 0 || loadingImages) return;
     setLoadingImages(true);
     try {
-      if (!GEMINI_API_KEY) {
-        console.warn('GEMINI_API_KEY is missing. Images will not be generated.');
+      if (!GEMINI_API_KEY || !ai) {
+        console.warn('GEMINI_API_KEY is missing or AI not initialized. Images will not be generated.');
         setLoadingImages(false);
         return;
       }
@@ -444,7 +453,7 @@ export default function CoolingSystemGame() {
     if (heroImage || loadingHero) return;
     setLoadingHero(true);
     try {
-      if (!GEMINI_API_KEY) {
+      if (!GEMINI_API_KEY || !ai) {
         setLoadingHero(false);
         return;
       }
