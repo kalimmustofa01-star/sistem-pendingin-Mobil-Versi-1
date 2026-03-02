@@ -432,6 +432,9 @@ export default function CoolingSystemGame() {
   const [loadingHero, setLoadingHero] = useState(false);
   const [genStatus, setGenStatus] = useState<string>('');
   const [isThermostatOpen, setIsThermostatOpen] = useState(false);
+  const [userData, setUserData] = useState({ name: '', class: '', school: '' });
+  const [showResultForm, setShowResultForm] = useState(false);
+  const [isResultConfirmed, setIsResultConfirmed] = useState(false);
 
   const generateSingleImage = async (compId: string) => {
     if (images[compId] || loadingImages) return;
@@ -607,6 +610,10 @@ export default function CoolingSystemGame() {
     setQuizStep(0);
     setAnalysisStep(0);
     setSelectedComponent(null);
+    setIsThermostatOpen(false);
+    setShowResultForm(false);
+    setIsResultConfirmed(false);
+    setUserData({ name: '', class: '', school: '' });
   };
 
   return (
@@ -1118,6 +1125,7 @@ export default function CoolingSystemGame() {
                           if (analysisStep < SCENARIOS.length - 1) {
                             setAnalysisStep(s => s + 1);
                           } else {
+                            setShowResultForm(true);
                             setMode('summary');
                           }
                         }}
@@ -1141,45 +1149,120 @@ export default function CoolingSystemGame() {
               animate={{ opacity: 1, scale: 1 }}
               className="max-w-2xl mx-auto text-center space-y-8"
             >
-              <div className="p-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 inline-block">
-                <CheckCircle2 size={64} className="text-emerald-500" />
-              </div>
-              <div className="space-y-4">
-                <h2 className="text-4xl font-bold tracking-tight">Pelatihan Selesai!</h2>
-                <p className="text-zinc-400 text-lg">
-                  Anda telah menyelesaikan seluruh modul sistem pendingin mobil.
-                </p>
-              </div>
+              {showResultForm && !isResultConfirmed ? (
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-[40px] p-10 space-y-8 shadow-2xl">
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-bold tracking-tight text-white">Data Peserta</h2>
+                    <p className="text-zinc-400">Silakan lengkapi data diri Anda untuk melihat hasil pelatihan.</p>
+                  </div>
+                  
+                  <div className="space-y-4 text-left">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nama Lengkap</label>
+                      <input 
+                        type="text" 
+                        value={userData.name}
+                        onChange={(e) => setUserData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Masukkan nama Anda..."
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Kelas</label>
+                        <input 
+                          type="text" 
+                          value={userData.class}
+                          onChange={(e) => setUserData(prev => ({ ...prev, class: e.target.value }))}
+                          placeholder="Contoh: XI TKR 1"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Sekolah</label>
+                        <input 
+                          type="text" 
+                          value={userData.school}
+                          onChange={(e) => setUserData(prev => ({ ...prev, school: e.target.value }))}
+                          placeholder="Nama Sekolah..."
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-6 py-4 text-white focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 grid grid-cols-2 gap-8">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Skor Akhir</span>
-                  <p className="text-4xl font-bold text-emerald-500">{score}</p>
+                  <button 
+                    onClick={() => {
+                      if (userData.name && userData.class && userData.school) {
+                        setIsResultConfirmed(true);
+                      } else {
+                        alert('Mohon lengkapi semua data.');
+                      }
+                    }}
+                    className="w-full py-5 bg-emerald-500 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-all shadow-[0_0_30px_rgba(16,185,129,0.2)]"
+                  >
+                    Lihat Hasil Nilai
+                  </button>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Status</span>
-                  <p className={cn(
-                    "text-4xl font-bold",
-                    score >= 7 ? "text-emerald-500" : "text-rose-500"
-                  )}>
-                    {score >= 7 ? "LULUS" : "Tidak Lulus"}
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="p-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 inline-block">
+                    <CheckCircle2 size={64} className="text-emerald-500" />
+                  </div>
+                  
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-[40px] p-10 space-y-8 shadow-2xl">
+                    <div className="space-y-2">
+                      <h2 className="text-4xl font-bold tracking-tight text-white">Hasil Pelatihan</h2>
+                      <p className="text-zinc-400">Selamat! Anda telah menyelesaikan seluruh modul.</p>
+                    </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button 
-                  onClick={resetGame}
-                  className="px-8 py-4 bg-zinc-100 text-black font-bold rounded-full hover:bg-white transition-all flex items-center justify-center gap-2"
-                >
-                  Ulangi Pelatihan <RotateCcw size={18} />
-                </button>
-                <button 
-                  className="px-8 py-4 bg-zinc-800 text-white font-bold rounded-full hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-                >
-                  Unduh Sertifikat <ChevronRight size={18} />
-                </button>
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left border-y border-zinc-800 py-8">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nama Peserta</span>
+                        <p className="text-lg font-bold text-white">{userData.name}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Kelas</span>
+                        <p className="text-lg font-bold text-white">{userData.class}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Sekolah</span>
+                        <p className="text-lg font-bold text-white">{userData.school}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 py-4">
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Skor Akhir</span>
+                        <p className="text-7xl font-black text-emerald-500 drop-shadow-[0_0_20px_rgba(16,185,129,0.3)]">{score}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Status Kelulusan</span>
+                        <p className={cn(
+                          "text-4xl font-black mt-4",
+                          score >= 7 ? "text-emerald-500" : "text-rose-500"
+                        )}>
+                          {score >= 7 ? "LULUS" : "TIDAK LULUS"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                      <button 
+                        onClick={resetGame}
+                        className="px-8 py-4 bg-zinc-100 text-black font-bold rounded-full hover:bg-white transition-all flex items-center justify-center gap-2"
+                      >
+                        Ulangi Pelatihan <RotateCcw size={18} />
+                      </button>
+                      <button 
+                        className="px-8 py-4 bg-zinc-800 text-white font-bold rounded-full hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        Unduh Sertifikat <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
