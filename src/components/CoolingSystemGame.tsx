@@ -398,19 +398,6 @@ const CoolantFlowDiagram = ({ images, loading, isThermostatOpen }: { images: Rec
   );
 };
 
-// Initialize Gemini outside component to avoid re-initialization
-// Use import.meta.env for better Vite/Vercel compatibility
-const GEMINI_API_KEY = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
-let ai: any = null;
-
-try {
-  if (GEMINI_API_KEY) {
-    ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  }
-} catch (error) {
-  console.error('Failed to initialize GoogleGenAI:', error);
-}
-
 export default function CoolingSystemGame() {
   const [mode, setMode] = useState<GameMode>('intro');
   const [selectedComponent, setSelectedComponent] = useState<ComponentInfo | null>(null);
@@ -435,6 +422,11 @@ export default function CoolingSystemGame() {
   const [userData, setUserData] = useState({ name: '', class: '', school: '' });
   const [showResultForm, setShowResultForm] = useState(false);
   const [isResultConfirmed, setIsResultConfirmed] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<ComponentInfo[]>([]);
+
+  const getAiClient = () => {
+    return new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY || '' });
+  };
 
   const generateSingleImage = async (compId: string) => {
     if (images[compId] || loadingImages) return;
@@ -442,19 +434,16 @@ export default function CoolingSystemGame() {
     if (!comp) return;
 
     setLoadingImages(true);
-    setGenStatus(`Membangkitkan ${comp.nameIndo}...`);
+    setGenStatus(`Membangkitkan gambar ${comp.nameIndo}...`);
     try {
-      if (!GEMINI_API_KEY || !ai) {
-        setGenStatus('API Key tidak ditemukan');
-        setLoadingImages(false);
-        return;
-      }
-
+      const aiClient = getAiClient();
       try {
-        const response = await ai.models.generateContent({
+        const response = await aiClient.models.generateContent({
           model: 'gemini-2.5-flash-image',
           contents: { parts: [{ text: comp.imagePrompt }] },
-          config: { imageConfig: { aspectRatio: "1:1" } }
+          config: { 
+            imageConfig: { aspectRatio: "1:1" }
+          }
         });
 
         const candidates = response.candidates || [];
@@ -469,18 +458,14 @@ export default function CoolingSystemGame() {
           }
         }
       } catch (aiError: any) {
-        console.warn("AI Generation failed, using text fallback:", aiError);
+        console.warn("AI Image generation failed, using fallback:", aiError);
         setImages(prev => ({ ...prev, [compId]: "__TEXT_ONLY__" }));
-        setGenStatus('Kuota AI Habis. Menampilkan teks.');
+        setGenStatus('Gagal memuat gambar. Menampilkan teks.');
         setTimeout(() => setGenStatus(''), 3000);
       }
     } catch (error: any) {
       console.error("Failed to generate image:", error);
-      if (error.message?.includes('429') || error.message?.includes('quota')) {
-        setGenStatus('Kuota AI Habis. Coba lagi nanti.');
-      } else {
-        setGenStatus('Gagal menghasilkan gambar');
-      }
+      setGenStatus('Gagal menghubungkan ke layanan gambar');
     } finally {
       setLoadingImages(false);
     }
@@ -489,29 +474,22 @@ export default function CoolingSystemGame() {
   const generateImages = async (force = false) => {
     if ((Object.keys(images).length >= COMPONENTS.length && !force) || loadingImages) return;
     setLoadingImages(true);
-    setGenStatus('Menghubungkan ke AI...');
+    setGenStatus('Menghubungkan ke layanan AI...');
     try {
-      if (!GEMINI_API_KEY || !ai) {
-        setGenStatus('API Key tidak ditemukan');
-        setLoadingImages(false);
-        return;
-      }
-      
-      const newImages: Record<string, string> = {};
+      const aiClient = getAiClient();
       const componentsToGen = force ? COMPONENTS : COMPONENTS.filter(c => !images[c.id]);
       
-      setGenStatus(`Menghasilkan ${componentsToGen.length} gambar...`);
-
-      // Generate images sequentially to respect rate limits and save quota
       for (let i = 0; i < componentsToGen.length; i++) {
         const comp = componentsToGen[i];
         setGenStatus(`Memproses ${i + 1}/${componentsToGen.length}: ${comp.nameIndo}...`);
         
         try {
-          const response = await ai.models.generateContent({
+          const response = await aiClient.models.generateContent({
             model: 'gemini-2.5-flash-image',
             contents: { parts: [{ text: comp.imagePrompt }] },
-            config: { imageConfig: { aspectRatio: "1:1" } }
+            config: { 
+              imageConfig: { aspectRatio: "1:1" }
+            }
           });
           
           const candidates = response.candidates || [];
@@ -523,23 +501,16 @@ export default function CoolingSystemGame() {
               }
             }
           }
-          // Small delay between requests
           await new Promise(r => setTimeout(r, 1000));
         } catch (e: any) {
-          console.error(`Failed to generate image for ${comp.id}, using fallback:`, e);
+          console.error(`Failed to get image for ${comp.id}:`, e);
           setImages(prev => ({ ...prev, [comp.id]: "__TEXT_ONLY__" }));
-          
-          if (e.message?.includes('429') || e.message?.includes('quota')) {
-            setGenStatus('Kuota Habis. Menampilkan teks.');
-            // Continue with fallbacks for the rest instead of breaking
-          }
         }
       }
-      
       setGenStatus('');
     } catch (error) {
       console.error("Failed to generate images:", error);
-      setGenStatus('Gagal menghasilkan gambar');
+      setGenStatus('Gagal memproses gambar');
     } finally {
       setLoadingImages(false);
     }
@@ -549,15 +520,14 @@ export default function CoolingSystemGame() {
     if (heroImage || loadingHero) return;
     setLoadingHero(true);
     try {
-      if (!GEMINI_API_KEY || !ai) {
-        setLoadingHero(false);
-        return;
-      }
+      const aiClient = getAiClient();
       try {
-        const response = await ai.models.generateContent({
+        const response = await aiClient.models.generateContent({
           model: 'gemini-2.5-flash-image',
-          contents: { parts: [{ text: 'A highly realistic, cinematic view of a modern car engine bay focusing on the cooling system components, radiator, hoses, and coolant reservoir, professional automotive photography, 4k resolution, depth of field' }] },
-          config: { imageConfig: { aspectRatio: "16:9" } }
+          contents: { parts: [{ text: 'Realistic cinematic photo of a car engine bay focusing on the cooling system, radiator, and hoses' }] },
+          config: { 
+            imageConfig: { aspectRatio: "16:9" }
+          }
         });
         
         for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -567,7 +537,7 @@ export default function CoolingSystemGame() {
           }
         }
       } catch (aiError) {
-        console.warn("Hero AI Generation failed, using text fallback:", aiError);
+        console.warn("Hero generation failed, using fallback:", aiError);
         setHeroImage('__TEXT_ONLY__');
       }
     } catch (error) {
@@ -584,6 +554,12 @@ export default function CoolingSystemGame() {
     // Bulk generation removed to save quota. 
     // Images will be generated on-demand or via manual trigger.
   }, [mode]);
+
+  useEffect(() => {
+    if (mode === 'quiz') {
+      setShuffledOptions([...COMPONENTS].sort(() => Math.random() - 0.5));
+    }
+  }, [quizStep, mode]);
 
   // Save images to localStorage whenever they change
   useEffect(() => {
@@ -718,12 +694,6 @@ export default function CoolingSystemGame() {
                     </span>
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   </button>
-
-                  {!GEMINI_API_KEY && (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md animate-pulse">
-                      <AlertTriangle size={16} /> API Key Belum Diatur di Vercel
-                    </div>
-                  )}
                 </div>
               </div>
             </motion.div>
@@ -1021,8 +991,7 @@ export default function CoolingSystemGame() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Shuffle options logic would be better, but for simplicity we use a fixed set including the correct one */}
-                  {[...COMPONENTS].sort(() => Math.random() - 0.5).map((comp) => (
+                  {shuffledOptions.map((comp) => (
                     <button
                       key={comp.id}
                       onClick={() => {
